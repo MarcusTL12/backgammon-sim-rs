@@ -57,7 +57,7 @@ impl Display for GameState {
 
         writeln!(f, "╔═════════════════╦═════════════════╗")?;
         write!(f, "║{}HOME:\x1b[0m            ║", COLS[0])?;
-        writeln!(f, "{}HOME:\x1b[0m            ║", COLS[1])?;
+        writeln!(f, "            {}HOME:\x1b[0m║", COLS[1])?;
 
         {
             let circles = "●".repeat(self.home[0] as usize);
@@ -116,7 +116,7 @@ impl Display for GameState {
 
         writeln!(f, "╠═════════════════╬═════════════════╣")?;
         write!(f, "║{}CAPTURED:\x1b[0m        ║", COLS[0])?;
-        writeln!(f, "{}CAPTURED:\x1b[0m        ║", COLS[1])?;
+        writeln!(f, "        {}CAPTURED:\x1b[0m║", COLS[1])?;
 
         {
             let circles = "●".repeat(self.captured[0] as usize);
