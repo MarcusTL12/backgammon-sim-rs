@@ -13,6 +13,7 @@ use Tile::*;
 pub struct GameState {
     tiles: [Tile; 24],
     captured: [u8; 2],
+    home: [u8; 2],
 }
 
 impl GameState {
@@ -45,28 +46,46 @@ impl GameState {
                 Dark(2),
             ],
             captured: [0, 0],
+            home: [0, 0],
         }
     }
 }
 
 impl Display for GameState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
+
         writeln!(f, "╔═════════════════╦═════════════════╗")?;
+        write!(f, "║{}HOME:\x1b[0m            ║", COLS[0])?;
+        writeln!(f, "{}HOME:\x1b[0m            ║", COLS[1])?;
+
+        {
+            let circles = "●".repeat(self.home[0] as usize);
+            let spaces = " ".repeat(15 - self.home[0] as usize);
+            write!(f, "║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+
+            write!(f, "  ║  ")?;
+
+            let circles = "●".repeat(self.home[1] as usize);
+            let spaces = " ".repeat(15 - self.home[1] as usize);
+            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
+        }
+
+        writeln!(f, "╠═════════════════╬═════════════════╣")?;
         for i in 0..12 {
             write!(f, "║")?;
             match self.tiles[i] {
                 Empty => print!("---------------"),
                 t => {
                     let (col, n) = match t {
-                        Light(n) => ("\x1b[33m", n),
-                        Dark(n) => ("\x1b[36m", n),
+                        Light(n) => (COLS[0], n),
+                        Dark(n) => (COLS[1], n),
                         Empty => unreachable!(),
                     };
 
                     let circles = "●".repeat(n as usize);
-                    let colored = format!("{col}{circles}\x1b[0m");
                     let dashes = "-".repeat(15 - n as usize);
-                    write!(f, "{colored}{dashes}")?;
+                    write!(f, "{col}{circles}\x1b[0m{dashes}")?;
                 }
             }
 
@@ -95,12 +114,31 @@ impl Display for GameState {
             }
         }
 
+        writeln!(f, "╠═════════════════╬═════════════════╣")?;
+        write!(f, "║{}CAPTURED:\x1b[0m        ║", COLS[0])?;
+        writeln!(f, "{}CAPTURED:\x1b[0m        ║", COLS[1])?;
+
+        {
+            let circles = "●".repeat(self.captured[0] as usize);
+            let spaces = " ".repeat(15 - self.captured[0] as usize);
+            write!(f, "║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+
+            write!(f, "  ║  ")?;
+
+            let circles = "●".repeat(self.captured[1] as usize);
+            let spaces = " ".repeat(15 - self.captured[1] as usize);
+            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
+        }
+
         write!(f, "╚═════════════════╩═════════════════╝")
     }
 }
 
 fn main() {
-    let state = GameState::new();
+    let mut state = GameState::new();
+
+    state.home = [5, 3];
+    state.captured = [3, 2];
 
     println!("{state}");
 }
