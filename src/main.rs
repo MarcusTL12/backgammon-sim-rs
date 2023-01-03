@@ -16,41 +16,6 @@ pub struct GameState {
     home: [u8; 2],
 }
 
-impl GameState {
-    pub fn new() -> Self {
-        Self {
-            tiles: [
-                Light(2),
-                Empty,
-                Empty,
-                Empty,
-                Empty,
-                Dark(5),
-                Empty,
-                Dark(3),
-                Empty,
-                Empty,
-                Empty,
-                Light(5),
-                Dark(5),
-                Empty,
-                Empty,
-                Empty,
-                Light(3),
-                Empty,
-                Light(5),
-                Empty,
-                Empty,
-                Empty,
-                Empty,
-                Dark(2),
-            ],
-            captured: [0, 0],
-            home: [0, 0],
-        }
-    }
-}
-
 impl Display for GameState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
@@ -134,11 +99,43 @@ impl Display for GameState {
     }
 }
 
-fn main() {
-    let mut state = GameState::new();
+impl GameState {
+    pub fn new() -> Self {
+        Self {
+            tiles: [
+                Light(2),
+                Empty,
+                Empty,
+                Empty,
+                Empty,
+                Dark(5),
+                Empty,
+                Dark(3),
+                Empty,
+                Empty,
+                Empty,
+                Light(5),
+                Dark(5),
+                Empty,
+                Empty,
+                Empty,
+                Light(3),
+                Empty,
+                Light(5),
+                Empty,
+                Empty,
+                Empty,
+                Empty,
+                Dark(2),
+            ],
+            captured: [0, 0],
+            home: [0, 0],
+        }
+    }
+}
 
-    state.home = [5, 3];
-    state.captured = [3, 2];
+fn main() {
+    let state = GameState::new();
 
     println!("{state}");
 }
