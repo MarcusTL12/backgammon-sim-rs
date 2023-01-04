@@ -8,6 +8,9 @@ pub enum Tile {
 }
 
 use Tile::*;
+use arrayvec::ArrayVec;
+
+const SPECIAL_MOVE: u8 = 99;
 
 #[derive(Debug)]
 pub struct GameState {
@@ -41,10 +44,10 @@ impl GameState {
     }
 
     pub fn is_all_home(&self) -> [bool; 2] {
-        let mut home = [true; 2];
+        let mut home = self.captured.map(|x| x == 0);
 
         for t in &self.tiles[..6] {
-            if let Dark(_) = t {
+            if let Light(_) = t {
                 home[1] = false;
             }
         }
@@ -58,7 +61,7 @@ impl GameState {
         }
 
         for t in &self.tiles[18..] {
-            if let Light(_) = t {
+            if let Dark(_) = t {
                 home[0] = false;
             }
         }
@@ -116,15 +119,15 @@ impl GameState {
 
             if self.is_all_home()[turn_ind] {
                 let die_pos = if turn {
-                    23 - die as usize
-                } else {
                     die as usize
+                } else {
+                    23 - die as usize
                 };
 
                 if let (Light(_), false) | (Dark(_), true) =
                     (self.tiles[die_pos], turn)
                 {
-                    moves.push([die_pos as u8, 255]);
+                    moves.push([die_pos as u8, SPECIAL_MOVE]);
                 }
 
                 // At this point if no moves has been pushed,
@@ -134,7 +137,7 @@ impl GameState {
                     let mut i = die_pos as isize;
                     while let Some(t) = self.tiles.get(i as usize) {
                         if let (Light(_), false) | (Dark(_), true) = (t, turn) {
-                            moves.push([i as u8, 255]);
+                            moves.push([i as u8, SPECIAL_MOVE]);
                             break;
                         }
 
@@ -148,17 +151,27 @@ impl GameState {
                 if let (Empty, _) | (Light(_), false) | (Dark(_), true) =
                     (self.tiles[i], turn)
                 {
-                    moves.push([255, i as u8]);
+                    moves.push([SPECIAL_MOVE, i as u8]);
                 }
             }
         }
     }
+
+    pub fn get_possible_moves_double(
+        &self,
+        turn: bool,
+        dice: [u8; 2],
+        moves: &mut Vec<ArrayVec<[u8; 2], 4>>,
+    ) {
+    }
 }
 
 fn main() {
-    let state = GameState::new_with_default_setup();
+    // let state = GameState::new_with_default_setup();
+    let mut state = GameState::new();
+    state.tiles[0] = Dark(15);
+    state.tiles[23] = Light(15);
 
-    println!("{:?}", state.get_tot_dist());
     println!("{state}");
 
     let mut moves = Vec::new();

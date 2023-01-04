@@ -7,6 +7,14 @@ impl Display for GameState {
         const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
 
         writeln!(f, "  ╔═════════════════╦═════════════════╗")?;
+        let [light_dist, dark_dist] = self.get_tot_dist();
+        writeln!(
+            f,
+            "  ║REMAINING:  {}{:3}\x1b[0m  ║  {}{:<3}\x1b[0m            ║",
+            COLS[1], dark_dist, COLS[0], light_dist
+        )?;
+
+        writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
         write!(f, "  ║{}HOME DARK\x1b[0m        ║", COLS[1])?;
         writeln!(f, "       {}HOME LIGHT\x1b[0m║", COLS[0])?;
 
