@@ -7,19 +7,19 @@ impl Display for GameState {
         const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
 
         writeln!(f, "  ╔═════════════════╦═════════════════╗")?;
-        write!(f, "  ║{}HOME LIGHT\x1b[0m       ║", COLS[0])?;
-        writeln!(f, "        {}HOME DARK\x1b[0m║", COLS[1])?;
+        write!(f, "  ║{}HOME DARK\x1b[0m        ║", COLS[1])?;
+        writeln!(f, "       {}HOME LIGHT\x1b[0m║", COLS[0])?;
 
         {
-            let circles = "●".repeat(self.finished[0] as usize);
-            let spaces = " ".repeat(15 - self.finished[0] as usize);
-            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+            let circles = "●".repeat(self.finished[1] as usize);
+            let spaces = " ".repeat(15 - self.finished[1] as usize);
+            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[1])?;
 
             write!(f, "  ║  ")?;
 
-            let circles = "●".repeat(self.finished[1] as usize);
-            let spaces = " ".repeat(15 - self.finished[1] as usize);
-            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
+            let circles = "●".repeat(self.finished[0] as usize);
+            let spaces = " ".repeat(15 - self.finished[0] as usize);
+            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[0])?;
         }
 
         writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
@@ -65,19 +65,19 @@ impl Display for GameState {
         }
 
         writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
-        write!(f, "  ║{}CAPTURED\x1b[0m         ║", COLS[0])?;
-        writeln!(f, "         {}CAPTURED\x1b[0m║", COLS[1])?;
+        write!(f, "  ║{}CAPTURED\x1b[0m         ║", COLS[1])?;
+        writeln!(f, "         {}CAPTURED\x1b[0m║", COLS[0])?;
 
         {
-            let circles = "●".repeat(self.captured[0] as usize);
-            let spaces = " ".repeat(15 - self.captured[0] as usize);
-            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+            let circles = "●".repeat(self.captured[1] as usize);
+            let spaces = " ".repeat(15 - self.captured[1] as usize);
+            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[1])?;
 
             write!(f, "  ║  ")?;
 
-            let circles = "●".repeat(self.captured[1] as usize);
-            let spaces = " ".repeat(15 - self.captured[1] as usize);
-            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
+            let circles = "●".repeat(self.captured[0] as usize);
+            let spaces = " ".repeat(15 - self.captured[0] as usize);
+            writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[0])?;
         }
 
         write!(f, "  ╚═════════════════╩═════════════════╝")

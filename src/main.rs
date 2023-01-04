@@ -19,6 +19,14 @@ pub struct GameState {
 impl GameState {
     pub fn new() -> Self {
         Self {
+            tiles: [Empty; 24],
+            captured: [0, 0],
+            finished: [0, 0],
+        }
+    }
+
+    pub fn new_with_default_setup() -> Self {
+        Self {
             tiles: [
                 Light(2),
                 Empty,
@@ -74,6 +82,20 @@ impl GameState {
         }
 
         home
+    }
+
+    pub fn get_tot_dist(&self) -> [u32; 2] {
+        let mut ans = [0, 0];
+
+        for (i, &t) in self.tiles.iter().enumerate() {
+            match t {
+                Empty => {}
+                Light(n) => ans[0] += n as u32 * (24 - i as u32),
+                Dark(n) => ans[1] += n as u32 * (i as u32 + 1),
+            }
+        }
+
+        ans
     }
 
     pub fn get_possible_moves(
@@ -152,8 +174,11 @@ impl GameState {
 }
 
 fn main() {
-    let state = GameState::new();
+    let mut state = GameState::new();
+    state.tiles[0] = Light(15);
+    state.tiles[23] = Dark(15);
 
+    println!("{:?}", state.get_tot_dist());
     println!("{state}");
 
     let mut moves = Vec::new();
