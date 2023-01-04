@@ -26,36 +26,18 @@ impl GameState {
     }
 
     pub fn new_with_default_setup() -> Self {
-        Self {
-            tiles: [
-                Light(2),
-                Empty,
-                Empty,
-                Empty,
-                Empty,
-                Dark(5),
-                Empty,
-                Dark(3),
-                Empty,
-                Empty,
-                Empty,
-                Light(5),
-                Dark(5),
-                Empty,
-                Empty,
-                Empty,
-                Light(3),
-                Empty,
-                Light(5),
-                Empty,
-                Empty,
-                Empty,
-                Empty,
-                Dark(2),
-            ],
-            captured: [0, 0],
-            finished: [0, 0],
-        }
+        let mut state = Self::new();
+
+        state.tiles[0] = Light(2);
+        state.tiles[5] = Dark(5);
+        state.tiles[7] = Dark(3);
+        state.tiles[11] = Light(5);
+        state.tiles[12] = Dark(5);
+        state.tiles[16] = Light(3);
+        state.tiles[18] = Light(5);
+        state.tiles[23] = Dark(2);
+
+        state
     }
 
     pub fn is_all_home(&self) -> [bool; 2] {
@@ -174,9 +156,7 @@ impl GameState {
 }
 
 fn main() {
-    let mut state = GameState::new();
-    state.tiles[0] = Light(15);
-    state.tiles[23] = Dark(15);
+    let state = GameState::new_with_default_setup();
 
     println!("{:?}", state.get_tot_dist());
     println!("{state}");
