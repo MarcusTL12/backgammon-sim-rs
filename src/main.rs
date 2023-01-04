@@ -160,37 +160,87 @@ impl GameState {
     }
 
     pub fn do_move(&mut self, [from, to]: [u8; 2]) {
-        let f = from as usize;
-        let t = to as usize;
-
-        match [self.tiles[f], self.tiles[t]] {
-            [Light(n), Empty] => {
-                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
-                self.tiles[t] = Light(1);
-            }
-            [Dark(n), Empty] => {
-                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
-                self.tiles[t] = Dark(1);
-            }
-            [Light(n), Light(m)] => {
-                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
-                self.tiles[t] = Light(m + 1);
-            }
-            [Dark(n), Dark(m)] => {
-                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
-                self.tiles[t] = Dark(m + 1);
-            }
-            [Light(n), Dark(1)] => {
-                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
-                self.tiles[t] = Light(1);
-                self.captured[1] += 1;
-            }
-            [Dark(n), Light(1)] => {
-                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
-                self.tiles[t] = Dark(1);
-                self.captured[0] += 1;
-            }
-            _ => panic!("Illegal move '{from} -> {to}'!"),
+        match [from as usize, to as usize] {
+            [f, 99] => match self.tiles[f] {
+                Light(n) => {
+                    self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                    self.finished[0] += 1;
+                }
+                Dark(n) => {
+                    self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                    self.finished[1] += 1;
+                }
+                Empty => panic!("Trying to move from empty tile {from}!"),
+            },
+            [99, t] => match t {
+                0..=5 => match (self.captured[0], self.tiles[t]) {
+                    (0, _) => panic!("No captured light pieces!"),
+                    (_, Empty) => {
+                        self.captured[0] -= 1;
+                        self.tiles[t] = Light(1);
+                    }
+                    (_, Light(n)) => {
+                        self.captured[0] -= 1;
+                        self.tiles[t] = Light(n + 1);
+                    }
+                    (_, Dark(1)) => {
+                        self.captured[0] -= 1;
+                        self.tiles[t] = Light(1);
+                        self.captured[1] += 1;
+                    }
+                    _ => panic!("Illegal move '{from} -> {to}'!"),
+                },
+                18..=23 => match (self.captured[1], self.tiles[t]) {
+                    (0, _) => panic!("No captured dark pieces!"),
+                    (_, Empty) => {
+                        self.captured[1] -= 1;
+                        self.tiles[t] = Dark(1);
+                    }
+                    (_, Dark(n)) => {
+                        self.captured[1] -= 1;
+                        self.tiles[t] = Dark(n + 1);
+                    }
+                    (_, Light(1)) => {
+                        self.captured[1] -= 1;
+                        self.tiles[t] = Dark(1);
+                        self.captured[0] += 1;
+                    }
+                    _ => panic!("Illegal move '{from} -> {to}'!"),
+                },
+                _ => {
+                    panic!("Trying to put captured piece in illegal position!");
+                }
+            },
+            [f, t] => match [self.tiles[f], self.tiles[t]] {
+                [Light(n), Empty] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                    self.tiles[t] = Light(1);
+                }
+                [Dark(n), Empty] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                    self.tiles[t] = Dark(1);
+                }
+                [Light(n), Light(m)] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                    self.tiles[t] = Light(m + 1);
+                }
+                [Dark(n), Dark(m)] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                    self.tiles[t] = Dark(m + 1);
+                }
+                [Light(n), Dark(1)] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                    self.tiles[t] = Light(1);
+                    self.captured[1] += 1;
+                }
+                [Dark(n), Light(1)] => {
+                    self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                    self.tiles[t] = Dark(1);
+                    self.captured[0] += 1;
+                }
+                [Empty, _] => panic!("Trying to move from empty tile {from}!"),
+                _ => panic!("Illegal move '{from} -> {to}'!"),
+            },
         }
     }
 
