@@ -67,7 +67,7 @@ impl GameState {
     }
 
     pub fn get_tot_dist(&self) -> [u32; 2] {
-        let mut ans = [0, 0];
+        let mut ans = self.captured.map(|x| x as u32 * 25);
 
         for (i, &t) in self.tiles.iter().enumerate() {
             match t {
