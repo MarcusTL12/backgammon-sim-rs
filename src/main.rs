@@ -13,7 +13,7 @@ use Tile::*;
 pub struct GameState {
     tiles: [Tile; 24],
     captured: [u8; 2],
-    home: [u8; 2],
+    finished: [u8; 2],
 }
 
 impl Display for GameState {
@@ -21,18 +21,18 @@ impl Display for GameState {
         const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
 
         writeln!(f, "╔═════════════════╦═════════════════╗")?;
-        write!(f, "║{}HOME\x1b[0m             ║", COLS[0])?;
-        writeln!(f, "             {}HOME\x1b[0m║", COLS[1])?;
+        write!(f, "║{}HOME LIGHT\x1b[0m       ║", COLS[0])?;
+        writeln!(f, "        {}HOME DARK\x1b[0m║", COLS[1])?;
 
         {
-            let circles = "●".repeat(self.home[0] as usize);
-            let spaces = " ".repeat(15 - self.home[0] as usize);
+            let circles = "●".repeat(self.finished[0] as usize);
+            let spaces = " ".repeat(15 - self.finished[0] as usize);
             write!(f, "║{}{circles}\x1b[0m{spaces}", COLS[0])?;
 
             write!(f, "  ║  ")?;
 
-            let circles = "●".repeat(self.home[1] as usize);
-            let spaces = " ".repeat(15 - self.home[1] as usize);
+            let circles = "●".repeat(self.finished[1] as usize);
+            let spaces = " ".repeat(15 - self.finished[1] as usize);
             writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
         }
 
@@ -129,7 +129,67 @@ impl GameState {
                 Dark(2),
             ],
             captured: [0, 0],
-            home: [0, 0],
+            finished: [0, 0],
+        }
+    }
+
+    pub fn is_all_home(&self) -> [bool; 2] {
+        let mut home = [true; 2];
+
+        for t in &self.tiles[..6] {
+            if let Dark(_) = t {
+                home[1] = false;
+            }
+        }
+
+        for t in &self.tiles[6..18] {
+            match t {
+                Empty => {}
+                Light(_) => home[0] = false,
+                Dark(_) => home[1] = false,
+            }
+        }
+
+        for t in &self.tiles[18..] {
+            if let Light(_) = t {
+                home[0] = false;
+            }
+        }
+
+        home
+    }
+
+    pub fn get_possible_moves(
+        &self,
+        turn: bool, // false => Light, true => Dark
+        die: u8,
+        moves: &mut Vec<[u8; 2]>,
+    ) {
+        moves.clear();
+
+        let turn_ind = if turn { 1 } else { 0 };
+
+        let move_dir = if turn { -1 } else { 1 };
+
+        if self.is_all_home()[turn_ind] {
+            // TODO: Also check for moves that move out
+        }
+
+        for i in 0..24 {
+            if let (Light(_), false) | (Dark(_), true) = (self.tiles[i], turn) {
+                if let (Some(Empty), _)
+                | (Some(Light(_)), false)
+                | (Some(Dark(_)), true) = (
+                    self.tiles
+                        .get((i as isize + die as isize * move_dir) as usize),
+                    turn,
+                ) {
+                    moves.push([
+                        i as u8,
+                        (i as isize + die as isize * move_dir) as u8,
+                    ]);
+                }
+            }
         }
     }
 }
