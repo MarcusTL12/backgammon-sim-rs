@@ -20,14 +20,14 @@ impl Display for GameState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         const COLS: [&str; 2] = ["\x1b[33m", "\x1b[36m"];
 
-        writeln!(f, "╔═════════════════╦═════════════════╗")?;
-        write!(f, "║{}HOME LIGHT\x1b[0m       ║", COLS[0])?;
+        writeln!(f, "  ╔═════════════════╦═════════════════╗")?;
+        write!(f, "  ║{}HOME LIGHT\x1b[0m       ║", COLS[0])?;
         writeln!(f, "        {}HOME DARK\x1b[0m║", COLS[1])?;
 
         {
             let circles = "●".repeat(self.finished[0] as usize);
             let spaces = " ".repeat(15 - self.finished[0] as usize);
-            write!(f, "║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[0])?;
 
             write!(f, "  ║  ")?;
 
@@ -36,9 +36,9 @@ impl Display for GameState {
             writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
         }
 
-        writeln!(f, "╠═════════════════╬═════════════════╣")?;
+        writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
         for i in 0..12 {
-            write!(f, "║")?;
+            write!(f, "{i:2}║")?;
             match self.tiles[i] {
                 Empty => print!("---------------"),
                 t => {
@@ -72,21 +72,20 @@ impl Display for GameState {
                 }
             }
 
+            writeln!(f, "║{}", 23 - i)?;
             if i == 5 {
-                writeln!(f, "║\n╠═════════════════╬═════════════════╣")?;
-            } else {
-                writeln!(f, "║")?;
+                writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
             }
         }
 
-        writeln!(f, "╠═════════════════╬═════════════════╣")?;
-        write!(f, "║{}CAPTURED\x1b[0m         ║", COLS[0])?;
+        writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
+        write!(f, "  ║{}CAPTURED\x1b[0m         ║", COLS[0])?;
         writeln!(f, "         {}CAPTURED\x1b[0m║", COLS[1])?;
 
         {
             let circles = "●".repeat(self.captured[0] as usize);
             let spaces = " ".repeat(15 - self.captured[0] as usize);
-            write!(f, "║{}{circles}\x1b[0m{spaces}", COLS[0])?;
+            write!(f, "  ║{}{circles}\x1b[0m{spaces}", COLS[0])?;
 
             write!(f, "  ║  ")?;
 
@@ -95,7 +94,7 @@ impl Display for GameState {
             writeln!(f, "{spaces}{}{circles}\x1b[0m║", COLS[1])?;
         }
 
-        write!(f, "╚═════════════════╩═════════════════╝")
+        write!(f, "  ╚═════════════════╩═════════════════╝")
     }
 }
 
@@ -238,4 +237,11 @@ fn main() {
     let state = GameState::new();
 
     println!("{state}");
+
+    let mut moves = Vec::new();
+
+    for die in 1..=6 {
+        state.get_possible_moves(false, die, true, &mut moves);
+        println!("{moves:2?}");
+    }
 }
