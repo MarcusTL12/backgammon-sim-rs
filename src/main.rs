@@ -7,8 +7,8 @@ pub enum Tile {
     Dark(u8),
 }
 
-use Tile::*;
 use arrayvec::ArrayVec;
+use Tile::*;
 
 const SPECIAL_MOVE: u8 = 99;
 
@@ -103,7 +103,9 @@ impl GameState {
                 {
                     if let (Some(Empty), _)
                     | (Some(Light(_)), false)
-                    | (Some(Dark(_)), true) = (
+                    | (Some(Dark(1)), false)
+                    | (Some(Dark(_)), true)
+                    | (Some(Light(1)), true) = (
                         self.tiles.get(
                             (i as isize + die as isize * move_dir) as usize,
                         ),
@@ -157,27 +159,65 @@ impl GameState {
         }
     }
 
+    pub fn do_move(&mut self, [from, to]: [u8; 2]) {
+        let f = from as usize;
+        let t = to as usize;
+
+        match [self.tiles[f], self.tiles[t]] {
+            [Light(n), Empty] => {
+                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                self.tiles[t] = Light(1);
+            }
+            [Dark(n), Empty] => {
+                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                self.tiles[t] = Dark(1);
+            }
+            [Light(n), Light(m)] => {
+                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                self.tiles[t] = Light(m + 1);
+            }
+            [Dark(n), Dark(m)] => {
+                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                self.tiles[t] = Dark(m + 1);
+            }
+            [Light(n), Dark(1)] => {
+                self.tiles[f] = if n == 1 { Empty } else { Light(n - 1) };
+                self.tiles[t] = Light(1);
+                self.captured[1] += 1;
+            }
+            [Dark(n), Light(1)] => {
+                self.tiles[f] = if n == 1 { Empty } else { Dark(n - 1) };
+                self.tiles[t] = Dark(1);
+                self.captured[0] += 1;
+            }
+            _ => panic!("Illegal move '{from} -> {to}'!"),
+        }
+    }
+
     pub fn get_possible_moves_double(
         &self,
         turn: bool,
-        dice: [u8; 2],
+        mut dice: [u8; 2],
         moves: &mut Vec<ArrayVec<[u8; 2], 4>>,
     ) {
+        moves.clear();
+        dice.sort();
     }
 }
 
 fn main() {
-    // let state = GameState::new_with_default_setup();
-    let mut state = GameState::new();
-    state.tiles[0] = Dark(15);
-    state.tiles[23] = Light(15);
+    let mut state = GameState::new_with_default_setup();
 
     println!("{state}");
+    state.do_move([0, 6]);
+    println!("{state}");
+    state.do_move([5, 0]);
+    println!("{state}");
 
-    let mut moves = Vec::new();
+    // let mut moves = Vec::new();
 
-    for die in 1..=6 {
-        state.get_possible_moves(false, die, true, &mut moves);
-        println!("{moves:2?}");
-    }
+    // for die in 1..=6 {
+    //     state.get_possible_moves(false, die, true, &mut moves);
+    //     println!("{moves:2?}");
+    // }
 }
