@@ -1,18 +1,20 @@
 mod game_display;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Tile {
     Empty,
     Light(u8),
     Dark(u8),
 }
 
+use std::collections::{HashMap, HashSet};
+
 use arrayvec::ArrayVec;
 use Tile::*;
 
 const SPECIAL_MOVE: u8 = 99;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
     tiles: [Tile; 24],
     captured: [u8; 2],
@@ -87,9 +89,10 @@ impl GameState {
         &self,
         turn: bool, // false => Light, true => Dark
         die: u8,
-        wasteful: bool,
         moves: &mut Vec<[u8; 2]>,
-    ) {
+    ) -> bool {
+        let mut wasteful = false;
+
         moves.clear();
 
         let turn_ind = if turn { 1 } else { 0 };
@@ -135,10 +138,11 @@ impl GameState {
                 // At this point if no moves has been pushed,
                 // we can check for 'wasteful' moves.
 
-                if wasteful && moves.is_empty() {
+                if moves.is_empty() {
                     let mut i = die_pos as isize;
                     while let Some(t) = self.tiles.get(i as usize) {
                         if let (Light(_), false) | (Dark(_), true) = (t, turn) {
+                            wasteful = true;
                             moves.push([i as u8, SPECIAL_MOVE]);
                             break;
                         }
@@ -157,6 +161,8 @@ impl GameState {
                 }
             }
         }
+
+        wasteful
     }
 
     pub fn do_move(&mut self, [from, to]: [u8; 2]) {
@@ -249,9 +255,76 @@ impl GameState {
         turn: bool,
         mut dice: [u8; 2],
         moves: &mut Vec<ArrayVec<[u8; 2], 4>>,
+        move_buf: &mut Vec<Vec<[u8; 2]>>,
+        seen_states_buf: &mut Vec<HashMap<GameState, ArrayVec<[u8; 2], 4>>>,
     ) {
         moves.clear();
         dice.sort();
+        let dice = dice;
+
+        if dice[0] != dice[1] {
+            let mut buf1 = move_buf.pop().unwrap_or_else(|| Vec::new());
+            let mut buf2 = move_buf.pop().unwrap_or_else(|| Vec::new());
+
+            let wasteful1 = self.get_possible_moves(turn, dice[0], &mut buf1);
+
+            let mut seen_ord =
+                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+            let mut seen_1w =
+                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+            let mut seen_2w =
+                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+            let mut seen_1u =
+                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+            let mut seen_1u1w =
+                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+
+            seen_ord.clear();
+            seen_1w.clear();
+            seen_2w.clear();
+            seen_1u.clear();
+            seen_1u1w.clear();
+
+            if !buf1.is_empty() {
+                for &m1 in &buf1 {
+                    let mut newstate = self.clone();
+                    newstate.do_move(m1);
+
+                    if wasteful1 {
+                        &mut seen_1u1w
+                    } else {
+                        &mut seen_1u
+                    }
+                    .insert(
+                        newstate.clone(),
+                        (&[m1] as &[_]).try_into().unwrap(),
+                    );
+
+                    let wasteful2 =
+                        newstate.get_possible_moves(turn, dice[1], &mut buf2);
+
+                    match [wasteful1, wasteful2] {
+                        [false, false] => &mut seen_ord,
+                        [true, false] | [false, true] => &mut seen_1w,
+                        [true, true] => &mut seen_2w,
+                    }
+                    .extend(buf2.drain(..).map(|m2| {
+                        let mut newstate2 = newstate.clone();
+                        newstate2.do_move(m2);
+                        (newstate2, (&[m1, m2] as &[_]).try_into().unwrap())
+                    }));
+                }
+            }
+
+            seen_states_buf.push(seen_1u);
+            seen_states_buf.push(seen_2w);
+            seen_states_buf.push(seen_1w);
+            seen_states_buf.push(seen_ord);
+            move_buf.push(buf2);
+            move_buf.push(buf1);
+        } else {
+            // TODO: figure out how to deal with four equal dice.
+        }
     }
 }
 
@@ -262,6 +335,10 @@ fn main() {
     state.do_move([0, 6]);
     println!("{state}");
     state.do_move([5, 0]);
+    println!("{state}");
+    state.do_move([99, 0]);
+    println!("{state}");
+    state.do_move([5, 99]);
     println!("{state}");
 
     // let mut moves = Vec::new();
