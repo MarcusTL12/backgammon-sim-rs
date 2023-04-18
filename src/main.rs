@@ -7,7 +7,7 @@ pub enum Tile {
     Dark(u8),
 }
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use arrayvec::ArrayVec;
 use Tile::*;
@@ -263,21 +263,16 @@ impl GameState {
         let dice = dice;
 
         if dice[0] != dice[1] {
-            let mut buf1 = move_buf.pop().unwrap_or_else(|| Vec::new());
-            let mut buf2 = move_buf.pop().unwrap_or_else(|| Vec::new());
+            let mut buf1 = move_buf.pop().unwrap_or_default();
+            let mut buf2 = move_buf.pop().unwrap_or_default();
 
             let wasteful1 = self.get_possible_moves(turn, dice[0], &mut buf1);
 
-            let mut seen_ord =
-                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
-            let mut seen_1w =
-                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
-            let mut seen_2w =
-                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
-            let mut seen_1u =
-                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
-            let mut seen_1u1w =
-                seen_states_buf.pop().unwrap_or_else(|| HashMap::new());
+            let mut seen_ord = seen_states_buf.pop().unwrap_or_default();
+            let mut seen_1w = seen_states_buf.pop().unwrap_or_default();
+            let mut seen_2w = seen_states_buf.pop().unwrap_or_default();
+            let mut seen_1u = seen_states_buf.pop().unwrap_or_default();
+            let mut seen_1u1w = seen_states_buf.pop().unwrap_or_default();
 
             seen_ord.clear();
             seen_1w.clear();
