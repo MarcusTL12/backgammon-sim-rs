@@ -21,7 +21,6 @@ pub struct GameState {
     finished: [u8; 2],
 }
 
-
 impl Default for GameState {
     fn default() -> Self {
         Self::new()
@@ -92,6 +91,7 @@ impl GameState {
         ans
     }
 
+    // Returns true if moves are wasteful
     pub fn get_possible_moves(
         &self,
         turn: bool, // false => Light, true => Dark
@@ -275,6 +275,8 @@ impl GameState {
 
             let wasteful1 = self.get_possible_moves(turn, dice[0], &mut buf1);
 
+            // u for unused
+            // w for wasteful
             let mut seen_ord = seen_states_buf.pop().unwrap_or_default();
             let mut seen_1w = seen_states_buf.pop().unwrap_or_default();
             let mut seen_2w = seen_states_buf.pop().unwrap_or_default();
@@ -331,22 +333,29 @@ impl GameState {
 }
 
 fn main() {
-    let mut state = GameState::new_with_default_setup();
+    let state = GameState::new_with_default_setup();
 
     println!("{state}");
-    state.do_move([0, 6]);
-    println!("{state}");
-    state.do_move([5, 0]);
-    println!("{state}");
-    state.do_move([99, 0]);
-    println!("{state}");
-    state.do_move([5, 99]);
-    println!("{state}");
+    // state.do_move([0, 6]);
+    // println!("{state}");
+    // state.do_move([5, 0]);
+    // println!("{state}");
+    // state.do_move([99, 0]);
+    // println!("{state}");
+    // state.do_move([5, 99]);
+    // println!("{state}");
 
-    // let mut moves = Vec::new();
+    let mut moves = Vec::new();
 
-    // for die in 1..=6 {
-    //     state.get_possible_moves(false, die, true, &mut moves);
-    //     println!("{moves:2?}");
-    // }
+    for die in 1..=6 {
+        // state.get_possible_moves(false, die, &mut moves);
+        state.get_possible_moves_double(
+            false,
+            [1, die],
+            &mut moves,
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
+        println!("{moves:2?}");
+    }
 }
