@@ -21,6 +21,13 @@ pub struct GameState {
     finished: [u8; 2],
 }
 
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameState {
     pub fn new() -> Self {
         Self {

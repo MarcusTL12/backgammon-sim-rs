@@ -34,7 +34,7 @@ impl Display for GameState {
         for i in 0..12 {
             write!(f, "{i:2}║")?;
             match self.tiles[i] {
-                Empty => print!("---------------"),
+                Empty => write!(f, "---------------")?,
                 t => {
                     let (col, n) = match t {
                         Light(n) => (COLS[0], n),
@@ -51,7 +51,7 @@ impl Display for GameState {
             write!(f, "  ║  ")?;
 
             match self.tiles[23 - i] {
-                Empty => print!("---------------"),
+                Empty => write!(f, "---------------")?,
                 t => {
                     let (col, n) = match t {
                         Light(n) => ("\x1b[33m", n),
