@@ -7,12 +7,14 @@ pub enum Tile {
     Dark(u8),
 }
 
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::transmute};
 
 use arrayvec::ArrayVec;
 use Tile::*;
 
 const SPECIAL_MOVE: u8 = 99;
+
+type StateMap = HashMap<GameState, ArrayVec<[u8; 2], 4>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
@@ -25,6 +27,10 @@ impl Default for GameState {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn count_trues<const N: usize>(bits: &[bool; N]) -> usize {
+    bits.iter().filter(|&&x| x).count()
 }
 
 impl GameState {
@@ -291,16 +297,132 @@ impl GameState {
                     let mut state = state.clone();
                     state.do_move(m2);
 
-                    match [wasteful1, wasteful2] {
-                        [false, false] => &mut *seen_ord,
-                        [true, false] | [false, true] => &mut *seen_1w,
-                        [true, true] => &mut *seen_2w,
+                    match count_trues(&[wasteful1, wasteful2]) {
+                        0 => &mut *seen_ord,
+                        1 => &mut *seen_1w,
+                        2 => &mut *seen_2w,
+                        _ => unreachable!(),
                     }
                     .insert(state, [m1, m2].into_iter().collect());
                 }
             }
         }
 
+        move_buf.push(buf2);
+        move_buf.push(buf1);
+    }
+
+    fn get_possible_moves_quadruple_ordered(
+        &self,
+        turn: bool,
+        die: u8,
+        move_buf: &mut Vec<Vec<[u8; 2]>>,
+        seen: &mut [HashMap<GameState, ArrayVec<[u8; 2], 4>>; 14],
+    ) {
+        // u for unused
+        // w for wasteful
+        // transmuting because rustfmt is weird.
+        let tmp: &mut (
+            [StateMap; 5],
+            [StateMap; 4],
+            [StateMap; 3],
+            [StateMap; 2],
+        ) = unsafe { transmute(seen) };
+        let (
+            [seen_ord, seen_1w, seen_2w, seen_3w, seen_4w],
+            [seen_1u, seen_1u1w, seen_1u2w, seen_1u3w],
+            [seen_2u, seen_2u1w, seen_2u2w],
+            [seen_3u, seen_3u1w],
+        ) = tmp;
+
+        let mut buf1 = move_buf.pop().unwrap_or_default();
+        let mut buf2 = move_buf.pop().unwrap_or_default();
+        let mut buf3 = move_buf.pop().unwrap_or_default();
+        let mut buf4 = move_buf.pop().unwrap_or_default();
+
+        let wasteful1 = self.get_possible_moves(turn, die, &mut buf1);
+
+        for &m1 in &buf1 {
+            let mut state = self.clone();
+            state.do_move(m1);
+
+            let wasteful2 = state.get_possible_moves(turn, die, &mut buf2);
+
+            if buf2.is_empty() {
+                if wasteful1 {
+                    &mut *seen_3u1w
+                } else {
+                    &mut *seen_3u
+                }
+                .insert(state, [m1].into_iter().collect());
+            } else {
+                for &m2 in &buf2 {
+                    let mut state = state.clone();
+                    state.do_move(m2);
+
+                    let wasteful3 =
+                        state.get_possible_moves(turn, die, &mut buf3);
+
+                    if buf3.is_empty() {
+                        match count_trues(&[wasteful1, wasteful2]) {
+                            0 => &mut *seen_2u,
+                            1 => &mut *seen_2u1w,
+                            2 => &mut *seen_2u2w,
+                            _ => unreachable!(),
+                        }
+                        .insert(state, [m1, m2].into_iter().collect());
+                    } else {
+                        for &m3 in &buf3 {
+                            let mut state = state.clone();
+                            state.do_move(m3);
+
+                            let wasteful4 =
+                                state.get_possible_moves(turn, die, &mut buf4);
+
+                            if buf4.is_empty() {
+                                match count_trues(&[
+                                    wasteful1, wasteful2, wasteful3,
+                                ]) {
+                                    0 => &mut *seen_1u,
+                                    1 => &mut *seen_1u1w,
+                                    2 => &mut *seen_1u2w,
+                                    3 => &mut *seen_1u3w,
+                                    _ => unreachable!(),
+                                }
+                                .insert(
+                                    state,
+                                    [m1, m2, m3].into_iter().collect(),
+                                );
+                            } else {
+                                for &m4 in &buf4 {
+                                    let mut state = state.clone();
+                                    state.do_move(m4);
+
+                                    match count_trues(&[
+                                        wasteful1, wasteful2, wasteful3,
+                                        wasteful4,
+                                    ]) {
+                                        0 => &mut *seen_ord,
+                                        1 => &mut *seen_1w,
+                                        2 => &mut *seen_2w,
+                                        3 => &mut *seen_3w,
+                                        4 => &mut *seen_4w,
+                                        _ => unreachable!(),
+                                    }
+                                    .insert(
+                                        state,
+                                        [m1, m2, m3, m4].into_iter().collect(),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        move_buf.push(buf4);
+        move_buf.push(buf3);
         move_buf.push(buf2);
         move_buf.push(buf1);
     }
@@ -346,7 +468,24 @@ impl GameState {
 
             moves.sort();
         } else {
-            // TODO: figure out how to deal with four equal dice.
+            let mut seen =
+                [(); 14].map(|()| seen_states_buf.pop().unwrap_or_default());
+
+            for seen in &mut seen {
+                seen.clear();
+            }
+
+            self.get_possible_moves_quadruple_ordered(
+                turn, dice[0], move_buf, &mut seen,
+            );
+
+            if let Some(seen) = seen.iter_mut().find(|seen| !seen.is_empty()) {
+                moves.extend(seen.drain().map(|(_, x)| x));
+            }
+
+            for seen in seen {
+                seen_states_buf.push(seen);
+            }
         }
     }
 }
