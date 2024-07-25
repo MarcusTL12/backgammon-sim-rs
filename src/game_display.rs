@@ -33,8 +33,9 @@ impl Display for GameState {
         writeln!(f, "  ╠═════════════════╬═════════════════╣")?;
         for i in 0..12 {
             write!(f, "{i:2}║")?;
+            let dash_color = COLS[(i + 1) % 2];
             match self.tiles[i] {
-                Empty => write!(f, "---------------")?,
+                Empty => write!(f, "{dash_color}---------------\x1b[0m")?,
                 t => {
                     let (col, n) = match t {
                         Light(n) => (COLS[0], n),
@@ -44,14 +45,16 @@ impl Display for GameState {
 
                     let circles = "●".repeat(n as usize);
                     let dashes = "-".repeat(15 - n as usize);
-                    write!(f, "{col}{circles}\x1b[0m{dashes}")?;
+                    write!(f, "{col}{circles}{dash_color}{dashes}\x1b[0m")?;
                 }
             }
 
             write!(f, "  ║  ")?;
 
+            let dash_color = COLS[i % 2];
+
             match self.tiles[23 - i] {
-                Empty => write!(f, "---------------")?,
+                Empty => write!(f, "{dash_color}---------------\x1b[0m")?,
                 t => {
                     let (col, n) = match t {
                         Light(n) => ("\x1b[33m", n),
@@ -62,7 +65,7 @@ impl Display for GameState {
                     let circles = "●".repeat(n as usize);
                     let colored = format!("{col}{circles}\x1b[0m");
                     let dashes = "-".repeat(15 - n as usize);
-                    write!(f, "{dashes}{colored}")?;
+                    write!(f, "{dash_color}{dashes}{colored}")?;
                 }
             }
 
