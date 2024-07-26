@@ -1,4 +1,5 @@
 mod game_display;
+mod evaluator;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Tile {
@@ -7,7 +8,7 @@ pub enum Tile {
     Dark(u8),
 }
 
-use std::{collections::HashMap, mem::transmute};
+use std::{collections::HashMap, mem::transmute, time::Instant};
 
 use arrayvec::ArrayVec;
 use Tile::*;
@@ -503,17 +504,27 @@ fn main() {
     // state.do_move([5, 99]);
     // println!("{state}");
 
-    let mut moves = Vec::new();
+    let t = Instant::now();
+    let e = state.get_brute_force_eval(false, 3);
+    let t = t.elapsed();
+    println!("{e}");
+    println!("{t:?}");
 
-    for die in 1..=6 {
-        // state.get_possible_moves(false, die, &mut moves);
-        state.get_possible_moves_double(
-            false,
-            [1, die],
-            &mut moves,
-            &mut Vec::new(),
-            &mut Vec::new(),
-        );
-        println!("{moves:2?}\n");
-    }
+    // let mut moves = Vec::new();
+
+    // state.get_possible_moves_double(
+    //     false,
+    //     [5, 6],
+    //     &mut moves,
+    //     &mut Vec::new(),
+    //     &mut Vec::new(),
+    // );
+    // for m in moves {
+    //     println!("{m:2?}");
+    //     let mut new_state = state.clone();
+    //     for m in m {
+    //         new_state.do_move(m);
+    //     }
+    //     println!("{new_state}");
+    // }
 }
