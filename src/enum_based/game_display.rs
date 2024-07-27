@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{GameState, Tile::*};
+use super::{GameState, Tile::*};
 
 impl Display for GameState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

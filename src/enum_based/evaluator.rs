@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use arrayvec::ArrayVec;
 
-use crate::GameState;
+use super::GameState;
 
 impl GameState {
     fn get_net_dist(&self) -> i32 {
