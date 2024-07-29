@@ -1,11 +1,12 @@
 use std::cmp::Ordering;
 
-mod game_display;
+mod display;
 
 const SPECIAL_MOVE: u8 = 99;
 
 // Light: (Positive, forward, true)
 // Dark:  (Negative, backward, false)
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GameState {
     tiles: [i8; 24],
     captured: [u8; 2],
@@ -204,6 +205,85 @@ impl GameState {
     }
 }
 
+#[derive(Debug)]
+pub struct MoveBuffer {
+    dice: [u8; 2],
+    single: [Vec<u8>; 2],
+    double: [Vec<[u8; 2]>; 2],
+    triple: Vec<[u8; 3]>,
+    quadruple: Vec<[u8; 4]>,
+}
+
+impl MoveBuffer {
+    pub fn new() -> Self {
+        Self {
+            dice: [0; 2],
+            single: [const { Vec::new() }; 2],
+            double: [const { Vec::new() }; 2],
+            triple: Vec::new(),
+            quadruple: Vec::new(),
+        }
+    }
+
+    fn generate_double(&mut self, turn: bool, state: &GameState) {
+        for from1 in (0..24).chain([SPECIAL_MOVE]) {
+            let mut state1 = state.clone();
+            if state1.do_move(turn, from1, self.dice[0]).is_ok() {
+                self.single[0].push(from1);
+
+                for from2 in (0..24).chain([SPECIAL_MOVE]) {
+                    let mut state2 = state1.clone();
+                    if state2.do_move(turn, from2, self.dice[1]).is_ok() {
+                        self.double[0].push([from1, from2]);
+                    }
+                }
+            } else if state1.do_move(turn, from1, self.dice[1]).is_ok() {
+                self.single[1].push(from1);
+
+                let from2 = if from1 == SPECIAL_MOVE {
+                    if turn {
+                        self.dice[1] - 1
+                    } else {
+                        24 - self.dice[1]
+                    }
+                } else if turn {
+                    from1 + self.dice[1]
+                } else {
+                    from1 - self.dice[1]
+                };
+
+                dbg!(from2);
+                let mut state2 = state1.clone();
+                if state2.do_move(turn, from2, self.dice[0]).is_ok() {
+                    self.double[1].push([from1, from2]);
+                }
+            }
+        }
+    }
+
+    fn generate_quadruple(&mut self, turn: bool, state: &GameState) {
+        todo!()
+    }
+
+    fn generate(&mut self, turn: bool, state: &GameState, mut dice: [u8; 2]) {
+        self.single[0].clear();
+        self.double[0].clear();
+        self.double[1].clear();
+        self.triple.clear();
+        self.quadruple.clear();
+
+        dice.sort();
+
+        self.dice = dice;
+
+        if dice[0] == dice[1] {
+            self.generate_quadruple(turn, state);
+        } else {
+            self.generate_double(turn, state);
+        }
+    }
+}
+
 pub fn _test1() {
     let mut state = GameState::new_with_default_setup();
 
@@ -270,4 +350,16 @@ pub fn _test1() {
 
     let r = state.do_move(false, 4, 6);
     println!("{r:?}");
+}
+
+pub fn _test2() {
+    let state = GameState::new_with_default_setup();
+
+    println!("{state}");
+
+    let mut moves = MoveBuffer::new();
+
+    moves.generate(true, &state, [1, 2]);
+
+    println!("{moves:?}");
 }
