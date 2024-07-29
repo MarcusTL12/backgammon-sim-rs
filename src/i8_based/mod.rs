@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 mod display;
+// mod evaluator;
 
 const SPECIAL_MOVE: u8 = 99;
 
@@ -262,28 +263,25 @@ impl MoveBuffer {
 
     fn generate_quadruple(&mut self, turn: bool, state: GameState) {
         for from1 in (0..24).chain([SPECIAL_MOVE]) {
-            if let Ok(state1) = state.do_move(turn, from1, self.dice[0]) {
-                self.single[0].push(from1);
-                for from2 in (from1..24).chain([SPECIAL_MOVE]) {
-                    if let Ok(state2) =
-                        state1.do_move(turn, from2, self.dice[0])
-                    {
-                        self.double[0].push([from1, from2]);
-                        for from3 in (from2..24).chain([SPECIAL_MOVE]) {
-                            if let Ok(state3) =
-                                state2.do_move(turn, from3, self.dice[0])
-                            {
-                                self.triple.push([from1, from2, from3]);
-                                for from4 in (from3..24).chain([SPECIAL_MOVE]) {
-                                    if state3
-                                        .do_move(turn, from4, self.dice[0])
-                                        .is_ok()
-                                    {
-                                        self.quadruple
-                                            .push([from1, from2, from3, from4]);
-                                    }
-                                }
-                            }
+            let Ok(state1) = state.do_move(turn, from1, self.dice[0]) else {
+                continue;
+            };
+            self.single[0].push(from1);
+            for from2 in (from1..24).chain([SPECIAL_MOVE]) {
+                let Ok(state2) = state1.do_move(turn, from2, self.dice[0])
+                else {
+                    continue;
+                };
+                self.double[0].push([from1, from2]);
+                for from3 in (from2..24).chain([SPECIAL_MOVE]) {
+                    let Ok(state3) = state2.do_move(turn, from3, self.dice[0])
+                    else {
+                        continue;
+                    };
+                    self.triple.push([from1, from2, from3]);
+                    for from4 in (from3..24).chain([SPECIAL_MOVE]) {
+                        if state3.do_move(turn, from4, self.dice[0]).is_ok() {
+                            self.quadruple.push([from1, from2, from3, from4]);
                         }
                     }
                 }
