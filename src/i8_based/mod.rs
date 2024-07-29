@@ -238,8 +238,6 @@ impl MoveBuffer {
                     }
                 }
             } else if state1.do_move(turn, from1, self.dice[1]).is_ok() {
-                self.single[1].push(from1);
-
                 let from2 = if from1 == SPECIAL_MOVE {
                     if turn {
                         self.dice[1] - 1
@@ -257,6 +255,12 @@ impl MoveBuffer {
                 if state2.do_move(turn, from2, self.dice[0]).is_ok() {
                     self.double[1].push([from1, from2]);
                 }
+            }
+
+            let mut state1 = state.clone();
+
+            if state1.do_move(turn, from1, self.dice[1]).is_ok() {
+                self.single[1].push(from1);
             }
         }
     }
@@ -362,4 +366,38 @@ pub fn _test2() {
     moves.generate(true, &state, [1, 2]);
 
     println!("{moves:?}");
+
+    println!("Moves with only dice: {}", moves.dice[0]);
+
+    for &s in &moves.single[0] {
+        let mut new_state = state.clone();
+        new_state.do_move(true, s, moves.dice[0]).unwrap();
+        println!("{new_state}");
+    }
+
+    println!("Moves with only dice: {}", moves.dice[1]);
+
+    for &s in &moves.single[1] {
+        let mut new_state = state.clone();
+        new_state.do_move(true, s, moves.dice[1]).unwrap();
+        println!("{new_state}");
+    }
+
+    println!("Moves with dice: {:?}", moves.dice);
+
+    for &[s1, s2] in &moves.double[0] {
+        let mut new_state = state.clone();
+        new_state.do_move(true, s1, moves.dice[0]).unwrap();
+        new_state.do_move(true, s2, moves.dice[1]).unwrap();
+        println!("{new_state}");
+    }
+
+    println!("Reverse moves with dice: {:?}", moves.dice);
+
+    for &[s1, s2] in &moves.double[1] {
+        let mut new_state = state.clone();
+        new_state.do_move(true, s1, moves.dice[1]).unwrap();
+        new_state.do_move(true, s2, moves.dice[0]).unwrap();
+        println!("{new_state}");
+    }
 }
