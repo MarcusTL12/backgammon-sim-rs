@@ -6,7 +6,7 @@ const SPECIAL_MOVE: u8 = 99;
 
 // Light: (Positive, forward, true)
 // Dark:  (Negative, backward, false)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GameState {
     tiles: [i8; 24],
     captured: [u8; 2],
@@ -74,11 +74,11 @@ impl GameState {
     }
 
     pub fn do_move(
-        &mut self,
+        mut self,
         turn: bool,
         from: u8,
         n: u8,
-    ) -> Result<(), &'static str> {
+    ) -> Result<Self, &'static str> {
         match from {
             SPECIAL_MOVE => {
                 if self.captured[(!turn) as usize] > 0 {
@@ -89,24 +89,24 @@ impl GameState {
                         (true, 0..=127) => {
                             self.captured[0] -= 1;
                             self.tiles[target_spot] += 1;
-                            Ok(())
+                            Ok(self)
                         }
                         (false, -128..=0) => {
                             self.captured[1] -= 1;
                             self.tiles[target_spot] -= 1;
-                            Ok(())
+                            Ok(self)
                         }
                         (true, -1) => {
                             self.captured[0] -= 1;
                             self.captured[1] += 1;
                             self.tiles[target_spot] = 1;
-                            Ok(())
+                            Ok(self)
                         }
                         (false, 1) => {
                             self.captured[1] -= 1;
                             self.captured[0] += 1;
                             self.tiles[target_spot] = -1;
-                            Ok(())
+                            Ok(self)
                         }
                         (true, -128..=-2) | (false, 2..=127) => {
                             Err("Target spot occupied") // Checked
@@ -133,24 +133,24 @@ impl GameState {
                                 (true, 0..=127) => {
                                     self.tiles[from as usize] -= 1;
                                     self.tiles[target_spot] += 1;
-                                    Ok(())
+                                    Ok(self)
                                 }
                                 (false, -128..=0) => {
                                     self.tiles[from as usize] += 1;
                                     self.tiles[target_spot] -= 1;
-                                    Ok(())
+                                    Ok(self)
                                 }
                                 (true, -1) => {
                                     self.tiles[from as usize] -= 1;
                                     self.captured[1] += 1;
                                     self.tiles[target_spot] = 1;
-                                    Ok(())
+                                    Ok(self)
                                 }
                                 (false, 1) => {
                                     self.tiles[from as usize] += 1;
                                     self.captured[0] += 1;
                                     self.tiles[target_spot] = -1;
-                                    Ok(())
+                                    Ok(self)
                                 }
                                 (true, -128..=-2) | (false, 2..=127) => {
                                     Err("Target spot occupied") // Checked
@@ -163,12 +163,12 @@ impl GameState {
                                     (true, 24) => {
                                         self.tiles[from as usize] -= 1;
                                         self.finished[0] += 1;
-                                        Ok(())
+                                        Ok(self)
                                     }
                                     (false, -1) => {
                                         self.tiles[from as usize] += 1;
                                         self.finished[1] += 1;
-                                        Ok(())
+                                        Ok(self)
                                     }
                                     (true, _) => {
                                         if (18..from)
@@ -178,7 +178,7 @@ impl GameState {
                                         } else {
                                             self.tiles[from as usize] -= 1;
                                             self.finished[0] += 1;
-                                            Ok(())
+                                            Ok(self)
                                         }
                                     }
                                     (false, _) => {
@@ -189,7 +189,7 @@ impl GameState {
                                         } else {
                                             self.tiles[from as usize] -= 1;
                                             self.finished[0] += 1;
-                                            Ok(())
+                                            Ok(self)
                                         }
                                     }
                                 }
@@ -225,19 +225,18 @@ impl MoveBuffer {
         }
     }
 
-    fn generate_double(&mut self, turn: bool, state: &GameState) {
+    fn generate_double(&mut self, turn: bool, state: GameState) {
         for from1 in (0..24).chain([SPECIAL_MOVE]) {
-            let mut state1 = state.clone();
-            if state1.do_move(turn, from1, self.dice[0]).is_ok() {
+            if let Ok(state1) = state.do_move(turn, from1, self.dice[0]) {
                 self.single[0].push(from1);
 
                 for from2 in (0..24).chain([SPECIAL_MOVE]) {
-                    let mut state2 = state1.clone();
-                    if state2.do_move(turn, from2, self.dice[1]).is_ok() {
+                    if state1.do_move(turn, from2, self.dice[1]).is_ok() {
                         self.double[0].push([from1, from2]);
                     }
                 }
-            } else if state1.do_move(turn, from1, self.dice[1]).is_ok() {
+            } else if let Ok(state1) = state.do_move(turn, from1, self.dice[1])
+            {
                 let from2 = if from1 == SPECIAL_MOVE {
                     if turn {
                         self.dice[1] - 1
@@ -250,26 +249,38 @@ impl MoveBuffer {
                     from1 - self.dice[1]
                 };
 
-                dbg!(from2);
-                let mut state2 = state1.clone();
-                if state2.do_move(turn, from2, self.dice[0]).is_ok() {
+                if state1.do_move(turn, from2, self.dice[0]).is_ok() {
                     self.double[1].push([from1, from2]);
                 }
             }
 
-            let mut state1 = state.clone();
-
-            if state1.do_move(turn, from1, self.dice[1]).is_ok() {
+            if state.do_move(turn, from1, self.dice[1]).is_ok() {
                 self.single[1].push(from1);
             }
         }
     }
 
-    fn generate_quadruple(&mut self, turn: bool, state: &GameState) {
-        todo!()
+    fn generate_quadruple(&mut self, turn: bool, state: GameState) {
+        // for from1 in (0..24).chain([SPECIAL_MOVE]) {
+        //     let mut state1 = state.clone();
+        //     if state1.do_move(turn, from1, self.dice[0]).is_ok() {
+        //         self.single[0].push(from1);
+        //         for from2 in (from1..24).chain([SPECIAL_MOVE]) {
+        //             let mut state2 = state1.clone();
+        //             if state2.do_move(turn, from2, self.dice[0]).is_ok() {
+        //                 for from3 in (from2..24).chain([SPECIAL_MOVE]) {
+        //                     let mut state3 = state2.clone();
+        //                     if state3.do_move(turn, from2, self.dice[0]).is_ok()
+        //                     {
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
-    fn generate(&mut self, turn: bool, state: &GameState, mut dice: [u8; 2]) {
+    fn generate(&mut self, turn: bool, state: GameState, mut dice: [u8; 2]) {
         self.single[0].clear();
         self.double[0].clear();
         self.double[1].clear();
@@ -288,8 +299,8 @@ impl MoveBuffer {
     }
 }
 
-pub fn _test1() {
-    let mut state = GameState::new_with_default_setup();
+pub fn _test1() -> Result<(), &'static str> {
+    let state = GameState::new_with_default_setup();
 
     let r = state.do_move(true, 100, 6);
     println!("{r:?}");
@@ -297,8 +308,7 @@ pub fn _test1() {
     let r = state.do_move(true, 0, 5);
     println!("{r:?}");
 
-    state.do_move(true, 0, 6).unwrap();
-    state.do_move(true, 0, 6).unwrap();
+    let state = state.do_move(true, 0, 6)?.do_move(true, 0, 6)?;
 
     println!("{state}");
 
@@ -311,93 +321,96 @@ pub fn _test1() {
     let r = state.do_move(true, SPECIAL_MOVE, 3);
     println!("{r:?}");
 
-    state.do_move(true, 6, 2).unwrap();
-    state.do_move(false, 7, 1).unwrap();
+    let state = state.do_move(true, 6, 2)?.do_move(false, 7, 1)?;
     println!("{state}");
 
     let r = state.do_move(true, SPECIAL_MOVE, 6);
     println!("{r:?}");
 
-    state.do_move(true, SPECIAL_MOVE, 4).unwrap();
+    let state = state.do_move(true, SPECIAL_MOVE, 4)?;
     println!("{state}");
 
-    state.do_move(true, 3, 18).unwrap();
-    state.do_move(true, 8, 12).unwrap();
-    state.do_move(true, 11, 10).unwrap();
-    state.do_move(true, 11, 10).unwrap();
-    state.do_move(true, 11, 10).unwrap();
-    state.do_move(true, 11, 10).unwrap();
-    state.do_move(true, 11, 10).unwrap();
-    state.do_move(true, 16, 3).unwrap();
-    state.do_move(true, 16, 3).unwrap();
-    state.do_move(true, 16, 3).unwrap();
+    let state = state
+        .do_move(true, 3, 18)?
+        .do_move(true, 8, 12)?
+        .do_move(true, 11, 10)?
+        .do_move(true, 11, 10)?
+        .do_move(true, 11, 10)?
+        .do_move(true, 11, 10)?
+        .do_move(true, 11, 10)?
+        .do_move(true, 16, 3)?
+        .do_move(true, 16, 3)?
+        .do_move(true, 16, 3)?;
     println!("{state}");
 
-    state.do_move(true, 19, 5).unwrap();
+    let state = state.do_move(true, 19, 5)?;
     println!("{state}");
 
     let r = state.do_move(true, 19, 6);
     println!("{r:?}");
 
-    state.do_move(false, 23, 20).unwrap();
-    state.do_move(false, 23, 20).unwrap();
-    state.do_move(false, 12, 12).unwrap();
-    state.do_move(false, 12, 12).unwrap();
-    state.do_move(false, 12, 12).unwrap();
-    state.do_move(false, 12, 12).unwrap();
-    state.do_move(false, 12, 12).unwrap();
-    state.do_move(false, 7, 3).unwrap();
-    state.do_move(false, 7, 3).unwrap();
-    state.do_move(false, 6, 3).unwrap();
-    state.do_move(false, 4, 5).unwrap();
+    let state = state
+        .do_move(false, 23, 20)?
+        .do_move(false, 23, 20)?
+        .do_move(false, 12, 12)?
+        .do_move(false, 12, 12)?
+        .do_move(false, 12, 12)?
+        .do_move(false, 12, 12)?
+        .do_move(false, 12, 12)?
+        .do_move(false, 7, 3)?
+        .do_move(false, 7, 3)?
+        .do_move(false, 6, 3)?
+        .do_move(false, 4, 5)?;
     println!("{state}");
 
     let r = state.do_move(false, 4, 6);
     println!("{r:?}");
+
+    Ok(())
 }
 
 pub fn _test2() {
-    let state = GameState::new_with_default_setup();
+    // let state = GameState::new_with_default_setup();
 
-    println!("{state}");
+    // println!("{state}");
 
-    let mut moves = MoveBuffer::new();
+    // let mut moves = MoveBuffer::new();
 
-    moves.generate(true, &state, [1, 2]);
+    // moves.generate(true, &state, [5, 6]);
 
-    println!("{moves:?}");
+    // println!("{moves:?}");
 
-    println!("Moves with only dice: {}", moves.dice[0]);
+    // println!("Moves with only dice: {}", moves.dice[0]);
 
-    for &s in &moves.single[0] {
-        let mut new_state = state.clone();
-        new_state.do_move(true, s, moves.dice[0]).unwrap();
-        println!("{new_state}");
-    }
+    // for &s in &moves.single[0] {
+    //     let mut new_state = state.clone();
+    //     new_state.do_move(true, s, moves.dice[0]).unwrap();
+    //     println!("{new_state}");
+    // }
 
-    println!("Moves with only dice: {}", moves.dice[1]);
+    // println!("Moves with only dice: {}", moves.dice[1]);
 
-    for &s in &moves.single[1] {
-        let mut new_state = state.clone();
-        new_state.do_move(true, s, moves.dice[1]).unwrap();
-        println!("{new_state}");
-    }
+    // for &s in &moves.single[1] {
+    //     let mut new_state = state.clone();
+    //     new_state.do_move(true, s, moves.dice[1]).unwrap();
+    //     println!("{new_state}");
+    // }
 
-    println!("Moves with dice: {:?}", moves.dice);
+    // println!("Moves with dice: {:?}", moves.dice);
 
-    for &[s1, s2] in &moves.double[0] {
-        let mut new_state = state.clone();
-        new_state.do_move(true, s1, moves.dice[0]).unwrap();
-        new_state.do_move(true, s2, moves.dice[1]).unwrap();
-        println!("{new_state}");
-    }
+    // for &[s1, s2] in &moves.double[0] {
+    //     let mut new_state = state.clone();
+    //     new_state.do_move(true, s1, moves.dice[0]).unwrap();
+    //     new_state.do_move(true, s2, moves.dice[1]).unwrap();
+    //     println!("{new_state}");
+    // }
 
-    println!("Reverse moves with dice: {:?}", moves.dice);
+    // println!("Reverse moves with dice: {:?}", moves.dice);
 
-    for &[s1, s2] in &moves.double[1] {
-        let mut new_state = state.clone();
-        new_state.do_move(true, s1, moves.dice[1]).unwrap();
-        new_state.do_move(true, s2, moves.dice[0]).unwrap();
-        println!("{new_state}");
-    }
+    // for &[s1, s2] in &moves.double[1] {
+    //     let mut new_state = state.clone();
+    //     new_state.do_move(true, s1, moves.dice[1]).unwrap();
+    //     new_state.do_move(true, s2, moves.dice[0]).unwrap();
+    //     println!("{new_state}");
+    // }
 }
