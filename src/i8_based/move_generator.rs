@@ -102,6 +102,7 @@ impl MoveBuffer {
         mut dice: [u8; 2],
     ) {
         self.single[0].clear();
+        self.single[1].clear();
         self.double[0].clear();
         self.double[1].clear();
         self.triple.clear();
