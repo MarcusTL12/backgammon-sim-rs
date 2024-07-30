@@ -136,7 +136,7 @@ impl MoveBuffer {
                 true,
                 0,
             )
-        } else {
+        } else if !self.single[0].is_empty() || !self.single[1].is_empty() {
             Single(
                 self.state,
                 self.turn,
@@ -145,12 +145,15 @@ impl MoveBuffer {
                 true,
                 0,
             )
+        } else {
+            NoMoves(self.state, true)
         }
     }
 }
 
 #[derive(Debug)]
 pub enum StateIterator<'a> {
+    NoMoves(GameState, bool),
     Single(GameState, bool, [u8; 2], [&'a [u8]; 2], bool, usize),
     Double(GameState, bool, [u8; 2], [&'a [[u8; 2]]; 2], bool, usize),
     Triple(GameState, bool, u8, &'a [[u8; 3]], usize),
@@ -163,6 +166,10 @@ impl<'a> Iterator for StateIterator<'a> {
     fn next(&mut self) -> Option<GameState> {
         use StateIterator::*;
         match self {
+            NoMoves(state, should_return) => should_return.then(|| {
+                *should_return = false;
+                *state
+            }),
             Single(state, turn, dice, moves, first, i) => {
                 if *first {
                     if let Some(&from) = moves[0].get(*i) {
