@@ -11,6 +11,12 @@ pub struct MoveBuffer {
     pub quadruple: Vec<[u8; 4]>,
 }
 
+impl Default for MoveBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveBuffer {
     pub fn new() -> Self {
         Self {

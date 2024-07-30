@@ -6,14 +6,29 @@ impl GameState {
 
         (light_dist as i32) - (dark_dist as i32)
     }
+}
 
-    pub fn get_brute_force_eval(&self, turn: bool, depth: u32) -> f64 {
+pub struct Evaluator {
+    move_buffers: Vec<MoveBuffer>,
+}
+
+impl Evaluator {
+    pub fn new() -> Self {
+        Self { move_buffers: Vec::new() }
+    }
+
+    pub fn get_brute_force_eval(
+        &mut self,
+        state: GameState,
+        turn: bool,
+        depth: u32,
+    ) -> f64 {
         if depth == 0 {
-            self.get_net_dist() as f64
+            state.get_net_dist() as f64
         } else {
             let mut eval = 0.0;
 
-            let mut moves = MoveBuffer::new();
+            let mut moves = self.move_buffers.pop().unwrap_or_default();
 
             let p = 1.0 / 36.0;
             for d1 in 1..=6 {
@@ -21,7 +36,7 @@ impl GameState {
                     let p = if d1 == d2 { p } else { 2.0 * p };
 
                     if let Some((_, e)) =
-                        self.get_best_move(turn, [d1, d2], depth, &mut moves)
+                        self.get_best_move(state, turn, [d1, d2], depth, &mut moves)
                     {
                         eval += p * e;
                     } else {
@@ -30,23 +45,26 @@ impl GameState {
                 }
             }
 
+            self.move_buffers.push(moves);
+
             eval
         }
     }
 
     pub fn get_best_move(
-        &self,
+        &mut self,
+        state: GameState,
         turn: bool,
         dice: [u8; 2],
         depth: u32,
         moves: &mut MoveBuffer,
-    ) -> Option<(Self, f64)> {
-        moves.generate(turn, *self, dice);
+    ) -> Option<(GameState, f64)> {
+        moves.generate(turn, state, dice);
 
         let mut best = None;
 
         for new_state in moves.state_iterator() {
-            let eval = new_state.get_brute_force_eval(!turn, depth - 1);
+            let eval = self.get_brute_force_eval(new_state, !turn, depth - 1);
 
             if let Some((s, e)) = &mut best {
                 if (*e < eval) ^ turn {

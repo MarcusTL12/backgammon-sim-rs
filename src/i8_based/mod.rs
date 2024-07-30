@@ -1,10 +1,11 @@
 use std::{cmp::Ordering, time::Instant};
 
+use evaluator::Evaluator;
 use move_generator::MoveBuffer;
 
 mod display;
-mod move_generator;
 mod evaluator;
+mod move_generator;
 
 const SPECIAL_MOVE: u8 = 99;
 
@@ -367,8 +368,10 @@ pub fn _test3() {
 pub fn _test4() {
     let state = GameState::new_with_default_setup();
 
+    let mut ev = Evaluator::new();
+
     let t = Instant::now();
-    let eval = state.get_brute_force_eval(true, 3);
+    let eval = ev.get_brute_force_eval(state, true, 3);
     let t = t.elapsed();
 
     println!("{eval}");
