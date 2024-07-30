@@ -349,3 +349,17 @@ pub fn _test2() -> Result<(), &'static str> {
 
     Ok(())
 }
+
+pub fn _test3() {
+    let state = GameState::new_with_default_setup();
+
+    println!("{state}");
+
+    let mut moves = MoveBuffer::new();
+
+    moves.generate(true, state, [5, 5]);
+
+    for new_state in moves.state_iterator() {
+        println!("{new_state}");
+    }
+}
